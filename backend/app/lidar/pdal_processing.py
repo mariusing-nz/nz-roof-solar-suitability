@@ -4,9 +4,12 @@ import json
 import tempfile
 from pathlib import Path
 import numpy as np
-from app.config import settings
+from app.config import roof_classes, settings
 
 class PdalError(RuntimeError): pass
+
+def classification_limits() -> str:
+    return ",".join(f"Classification[{value}:{value}]" for value in roof_classes())
 
 async def extract_building_points(object_keys: list[str], geometry) -> np.ndarray:
     """Stream remote LAZ through PDAL, spatially crop first, then keep Class 6."""
@@ -18,7 +21,7 @@ async def extract_building_points(object_keys: list[str], geometry) -> np.ndarra
         ]
         pipeline = inputs + [
             {"type":"filters.crop", "polygon":geometry.buffer(settings.lidar_extraction_buffer_metres).wkt},
-            {"type":"filters.range", "limits":"Classification[6:6]"},
+            {"type":"filters.range", "limits":classification_limits()},
             {"type":"writers.text", "filename":str(output), "format":"csv", "order":"X,Y,Z", "keep_unspecified":"false"},
         ]
         proc = await asyncio.create_subprocess_exec(
@@ -34,4 +37,3 @@ async def extract_building_points(object_keys: list[str], geometry) -> np.ndarra
         if not rows: return np.empty((0, 3), dtype=float)
         try: return np.array([[float(r["X"]), float(r["Y"]), float(r["Z"])] for r in rows])
         except (KeyError, ValueError) as exc: raise PdalError("PDAL returned invalid XYZ data.") from exc
-

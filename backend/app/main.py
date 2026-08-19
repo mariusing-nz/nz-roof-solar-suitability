@@ -4,7 +4,7 @@ import httpx
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import Response
 from fastapi.middleware.cors import CORSMiddleware
-from app.config import settings
+from app.config import roof_classes, settings
 from app.models import RoofAnalysisRequest
 from app.linz.buildings import building_at, geometry_wgs84
 from app.linz.tile_index import intersecting_tiles
@@ -54,7 +54,7 @@ async def roof_analysis(request: RoofAnalysisRequest):
         if not tile_properties: raise LookupError("No intersecting LINZ 1:1k tile found.")
         objects = [await locate_object(p) for p in tile_properties]
         points = await extract_building_points([o.object_key for o in objects], building["geometry_nztm"])
-        if len(points) == 0: raise LookupError("No Classification 6 building points found.")
+        if len(points) == 0: raise LookupError(f"No roof points found in LAS classes {roof_classes()}.")
         if len(points) < settings.min_roof_points:
             raise LookupError(f"Insufficient roof points ({len(points)}; minimum {settings.min_roof_points}).")
         segments = segment_planes(points, settings.ransac_distance_threshold, settings.min_plane_points)
@@ -66,7 +66,7 @@ async def roof_analysis(request: RoofAnalysisRequest):
     except (LinzError, TileMappingError, PdalError) as exc: raise HTTPException(502, str(exc)) from exc
     return {
         "building":{"id":str(building["id"]), "geometry":geometry_wgs84(building["geometry_nztm"])},
-        "lidar":{"tiles":[o.filename for o in objects], "point_count":len(points)},
+        "lidar":{"tiles":[o.filename for o in objects], "point_count":len(points), "classifications":list(roof_classes())},
         "roof_faces":faces,
         "processing":{"duration_seconds":round(time.perf_counter()-started,3), "warnings":["Prototype faces use connected, building-clipped concave point boundaries."]},
     }

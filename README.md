@@ -1,8 +1,10 @@
 # NZ LiDAR Roof Solar Suitability
 
-A roof-geometry prototype for New Zealand. The browser accepts a map click; the planned vertical slice resolves a LINZ roof outline and all intersecting 1:1k tiles, crops Waikato 2021 LiDAR to Classification 6 with PDAL, detects planes, and returns GeoJSON with area, tilt, downslope azimuth, point count, and fit RMSE.
+A roof-geometry prototype for New Zealand. The browser accepts a map click; the vertical slice resolves a LINZ roof outline and all intersecting 1:1k tiles, crops Waikato 2021 LiDAR to configured roof-return classes with PDAL, detects planes, and returns GeoJSON with area, tilt, downslope azimuth, point count, and fit RMSE.
 
-> **Prototype status:** building selection, intersecting-tile selection, OpenTopography discovery, PDAL Class 6 extraction, RANSAC segmentation, spatial connectivity and building-clipped concave face polygons are connected. The next stage is broader real-house tuning.
+> **Prototype status:** building selection, intersecting-tile selection, OpenTopography discovery, configurable PDAL roof-return extraction, RANSAC segmentation, spatial connectivity and building-clipped concave face polygons are connected. The next stage is broader real-house tuning.
+
+`ROOF_POINT_CLASSES=1,6` includes building-classified and unclassified returns that may belong to roofs. Ground, vegetation, water and noise remain excluded. Set it to `6` for a direct Class-6-only comparison.
 
 ## Screenshot
 

@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     lidar_cache_dir: Path = Path("./data/lidar-cache")
     lidar_extraction_buffer_metres: float = 1.0
     min_roof_points: int = 50
+    roof_point_classes: str = "1,6"
     ransac_distance_threshold: float = 0.12
     min_plane_points: int = 30
     min_roof_face_area: float = 2.0
@@ -21,3 +22,12 @@ class Settings(BaseSettings):
     concave_hull_ratio: float = 0.25
 
 settings = Settings()
+
+def roof_classes() -> tuple[int, ...]:
+    try:
+        classes = tuple(sorted({int(value.strip()) for value in settings.roof_point_classes.split(",") if value.strip()}))
+    except ValueError as exc:
+        raise ValueError("ROOF_POINT_CLASSES must be comma-separated LAS class numbers.") from exc
+    if not classes or any(value < 0 or value > 255 for value in classes):
+        raise ValueError("ROOF_POINT_CLASSES must contain values from 0 to 255.")
+    return classes

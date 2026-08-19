@@ -6,7 +6,7 @@ map.addControl(new maplibregl.NavigationControl());
 map.on('click',async event=>{
   if(map.getLayer('roofs')){const hit=map.queryRenderedFeatures(event.point,{layers:['roofs']})[0];if(hit){popup(event.lngLat,hit.properties);return}}
   const status=document.querySelector('#status');status.textContent='Finding building, LiDAR and roof planes…';document.querySelector('#result').replaceChildren();
-  try{const response=await fetch(`${API_BASE}/api/roof-analysis`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({lon:event.lngLat.lng,lat:event.lngLat.lat})});const data=await response.json();if(!response.ok)throw Error(data.detail||'Analysis failed');status.textContent=`Detected ${data.roof_faces.length} roof planes from ${data.lidar.point_count.toLocaleString()} LiDAR points.`;show(data)}catch(error){status.textContent=error.message}
+  try{const response=await fetch(`${API_BASE}/api/roof-analysis`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({lon:event.lngLat.lng,lat:event.lngLat.lat})});const data=await response.json();if(!response.ok)throw Error(data.detail||'Analysis failed');status.textContent=`Detected ${data.roof_faces.length} roof planes from ${data.lidar.point_count.toLocaleString()} LiDAR points (classes ${data.lidar.classifications.join(' + ')}).`;show(data)}catch(error){status.textContent=error.message}
 });
 function show(data){
   for(const id of ['building','roofs'])if(map.getLayer(id))map.removeLayer(id);for(const id of ['building','roofs'])if(map.getSource(id))map.removeSource(id);
