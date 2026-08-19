@@ -27,16 +27,14 @@ def health(): return {"status":"ok", "linz_configured": bool(settings.linz_api_k
 @app.get("/api/basemap/{z}/{x}/{y}.png")
 async def aerial_basemap(z: int, x: int, y: int):
     """Backend proxy keeps the LINZ key out of browser JavaScript and network URLs."""
+    if not settings.linz_basemap_api_key:
+        raise HTTPException(503, "LINZ_BASEMAP_API_KEY is not configured.")
     if not 0 <= z <= 22 or x < 0 or y < 0:
         raise HTTPException(400, "Invalid map tile coordinates.")
     try:
         async with httpx.AsyncClient(timeout=30) as client:
-            if settings.linz_basemap_api_key:
-                url = f"https://basemaps.linz.govt.nz/v1/tiles/aerial/3857/{z}/{x}/{y}.png"
-                upstream = await client.get(url, params={"api": settings.linz_basemap_api_key})
-            else:
-                url = f"https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-                upstream = await client.get(url)
+            url = f"https://basemaps.linz.govt.nz/v1/tiles/aerial/3857/{z}/{x}/{y}.png"
+            upstream = await client.get(url, params={"api": settings.linz_basemap_api_key})
         if upstream.status_code == 404:
             raise HTTPException(404, "Aerial tile unavailable.")
         upstream.raise_for_status()

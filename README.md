@@ -57,7 +57,7 @@ python3 -m http.server 8080 --directory frontend
 # open http://localhost:8080
 ```
 
-The browser loads aerial imagery through `/api/basemap/{z}/{x}/{y}.png`. Set a separate `LINZ_BASEMAP_API_KEY` to use LINZ Basemaps; otherwise the proxy uses Esri World Imagery. Credentials are never exposed in frontend source or browser tile URLs.
+The browser loads LINZ aerial imagery through `/api/basemap/{z}/{x}/{y}.png` at all supported map zoom levels. A separate `LINZ_BASEMAP_API_KEY` is required. The map does not use a third-party imagery fallback, and credentials are never exposed in frontend source or browser tile URLs.
 
 Tests do not use live services:
 
