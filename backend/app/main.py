@@ -11,6 +11,9 @@ from app.linz.tile_index import intersecting_tiles
 from app.lidar.opentopography import locate_object
 from app.linz.wfs import LinzError
 from app.lidar.tile_mapping import TileMappingError
+from app.lidar.pdal_processing import PdalError, extract_building_points
+from app.roof.segmentation import segment_planes
+from app.roof.geometry import roof_face
 
 logging.basicConfig(level=logging.INFO)
 logging.getLogger("httpx").setLevel(logging.WARNING)
@@ -52,11 +55,21 @@ async def roof_analysis(request: RoofAnalysisRequest):
         tile_properties = await intersecting_tiles(building["geometry_nztm"])
         if not tile_properties: raise LookupError("No intersecting LINZ 1:1k tile found.")
         objects = [await locate_object(p) for p in tile_properties]
+        points = await extract_building_points([o.object_key for o in objects], building["geometry_nztm"])
+        if len(points) == 0: raise LookupError("No Classification 6 building points found.")
+        if len(points) < settings.min_roof_points:
+            raise LookupError(f"Insufficient roof points ({len(points)}; minimum {settings.min_roof_points}).")
+        segments = segment_planes(points, settings.ransac_distance_threshold, settings.min_plane_points)
+        faces = []
+        for segment in segments:
+            face = roof_face(segment, building["geometry_nztm"], len(faces) + 1)
+            if face and face["horizontal_area_m2"] >= settings.min_roof_face_area: faces.append(face)
+        if not faces: raise LookupError("Roof-plane segmentation produced no usable faces.")
     except LookupError as exc: raise HTTPException(404, str(exc)) from exc
-    except (LinzError, TileMappingError) as exc: raise HTTPException(502, str(exc)) from exc
+    except (LinzError, TileMappingError, PdalError) as exc: raise HTTPException(502, str(exc)) from exc
     return {
         "building":{"id":str(building["id"]), "geometry":geometry_wgs84(building["geometry_nztm"])},
-        "lidar":{"tiles":[o.filename for o in objects], "object_keys":[o.object_key for o in objects], "point_count":0},
-        "roof_faces":[],
-        "processing":{"duration_seconds":round(time.perf_counter()-started,3), "warnings":["Tile chain verified; PDAL extraction and roof-face polygonization are not yet connected to this endpoint."]},
+        "lidar":{"tiles":[o.filename for o in objects], "point_count":len(points)},
+        "roof_faces":faces,
+        "processing":{"duration_seconds":round(time.perf_counter()-started,3), "warnings":["Prototype RANSAC boundaries use building-clipped point hulls."]},
     }

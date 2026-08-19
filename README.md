@@ -2,7 +2,7 @@
 
 A roof-geometry prototype for New Zealand. The browser accepts a map click; the planned vertical slice resolves a LINZ roof outline and all intersecting 1:1k tiles, crops Waikato 2021 LiDAR to Classification 6 with PDAL, detects planes, and returns GeoJSON with area, tilt, downslope azimuth, point count, and fit RMSE.
 
-> **Prototype status:** building selection, intersecting-tile selection and exact OpenTopography object discovery are connected and tested against the live services. The reusable geometry, cache, API and web map are unit tested. PDAL extraction and roof polygonization remain to be connected to the endpoint.
+> **Prototype status:** building selection, intersecting-tile selection, OpenTopography discovery, PDAL Class 6 extraction, RANSAC segmentation and building-clipped face polygons are connected. The next stage is real-house tuning and spatial-connectivity refinement.
 
 ## Screenshot
 
@@ -71,7 +71,7 @@ See `.env.example`. Only `LINZ_API_KEY` is secret and it remains backend-only. I
 
 ## Current limitations
 
-- The live endpoint currently returns the selected building and verified LiDAR object names, but not roof faces yet.
+- Plane boundaries currently use building-clipped point hulls; concave, connectivity-aware boundaries are still planned.
 - Waikato 2021 only; acquisition dates may differ from building outlines.
 - Classification errors and complicated roofs, chimneys, skylights and furniture can impair segmentation.
 - Current RANSAC segmentation still needs spatial-connectivity enforcement and clipped concave face boundaries.
