@@ -17,5 +17,7 @@ class Settings(BaseSettings):
     ransac_distance_threshold: float = 0.12
     min_plane_points: int = 30
     min_roof_face_area: float = 2.0
+    spatial_connectivity_radius: float = 0.8
+    concave_hull_ratio: float = 0.25
 
 settings = Settings()

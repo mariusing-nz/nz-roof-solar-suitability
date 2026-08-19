@@ -13,7 +13,7 @@ from app.linz.wfs import LinzError
 from app.lidar.tile_mapping import TileMappingError
 from app.lidar.pdal_processing import PdalError, extract_building_points
 from app.roof.segmentation import segment_planes
-from app.roof.geometry import roof_face
+from app.roof.geometry import roof_faces
 
 logging.basicConfig(level=logging.INFO)
 logging.getLogger("httpx").setLevel(logging.WARNING)
@@ -60,8 +60,7 @@ async def roof_analysis(request: RoofAnalysisRequest):
         segments = segment_planes(points, settings.ransac_distance_threshold, settings.min_plane_points)
         faces = []
         for segment in segments:
-            face = roof_face(segment, building["geometry_nztm"], len(faces) + 1)
-            if face and face["horizontal_area_m2"] >= settings.min_roof_face_area: faces.append(face)
+            faces.extend(roof_faces(segment, building["geometry_nztm"], len(faces) + 1))
         if not faces: raise LookupError("Roof-plane segmentation produced no usable faces.")
     except LookupError as exc: raise HTTPException(404, str(exc)) from exc
     except (LinzError, TileMappingError, PdalError) as exc: raise HTTPException(502, str(exc)) from exc
@@ -69,5 +68,5 @@ async def roof_analysis(request: RoofAnalysisRequest):
         "building":{"id":str(building["id"]), "geometry":geometry_wgs84(building["geometry_nztm"])},
         "lidar":{"tiles":[o.filename for o in objects], "point_count":len(points)},
         "roof_faces":faces,
-        "processing":{"duration_seconds":round(time.perf_counter()-started,3), "warnings":["Prototype RANSAC boundaries use building-clipped point hulls."]},
+        "processing":{"duration_seconds":round(time.perf_counter()-started,3), "warnings":["Prototype faces use connected, building-clipped concave point boundaries."]},
     }
