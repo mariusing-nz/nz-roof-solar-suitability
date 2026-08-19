@@ -8,3 +8,6 @@ def test_official_index_url_preserves_addendum():
 def test_rejects_unverified_name():
     with pytest.raises(TileMappingError): resolve_tile({"name":"something.laz"})
 
+def test_verified_linz_schema_fields():
+    obj = resolve_tile({"index_tile_id":"BD34_1000_4928", "sheet_code_id":"BD34", "scale":1000, "tile":"4928"})
+    assert obj.filename == "CL2_BD34_2021_1000_4928.laz"

@@ -2,7 +2,7 @@
 
 A roof-geometry prototype for New Zealand. The browser accepts a map click; the planned vertical slice resolves a LINZ roof outline and all intersecting 1:1k tiles, crops Waikato 2021 LiDAR to Classification 6 with PDAL, detects planes, and returns GeoJSON with area, tilt, downslope azimuth, point count, and fit RMSE.
 
-> **Prototype status:** the reusable geometry, mapping, cache, API shell and web map are implemented and unit tested. Live `/api/roof-analysis` deliberately returns `501` until a developer runs the authenticated schema probe and records the actual advertised LINZ feature types. This avoids inventing WFS behaviour.
+> **Prototype status:** building selection, intersecting-tile selection and exact OpenTopography object discovery are connected and tested against the live services. The reusable geometry, cache, API and web map are unit tested. PDAL extraction and roof polygonization remain to be connected to the endpoint.
 
 ## Screenshot
 
@@ -25,7 +25,7 @@ CRS boundaries are explicit: browser coordinates are EPSG:4326; all spatial sele
 
 The official OpenTopography `NZ21_Waikato_TileIndex.zip` was inspected on 19 August 2026. Its DBF fields include `file_name`, `URL`, bounds, and point metadata. `file_name` values such as `CL2_BB33_2021_1000_2446.laz` follow LINZ's published `[product]_[Topo50 sheet]_[year]_[scale]_[row+column].[ext]` convention. `BB33` is the Topo50 sheet; the four digit suffix is the two-digit row plus two-digit column from an upper-left origin. The exact `URL` is authoritative because updated tiles may be under paths such as `NZ21_Waikato/Addendum5/`.
 
-`backend/app/lidar/tile_mapping.py` is the only module that resolves names. It prefers exact `file_name` + `URL`, validates the name, and fails closed when fields are insufficient. LINZ layer 104692 schema still requires an authenticated `DescribeFeatureType`/feature sample; no field names have been fabricated.
+`backend/app/lidar/tile_mapping.py` is the only module that constructs names. LINZ layer 104692 was observed advertising `index_tile_id`, `sheet_code_id`, `scale`, `tile`, and `shape`. The live probe resolved `BD34_1000_4928` to `CL2_BD34_2021_1000_4928.laz`; HEAD checks found it under `Addendum5`. Resolution validates the LINZ fields and probes the base prefix plus known addenda, failing closed if no object exists.
 
 Sources: [OpenTopography Waikato dataset](https://portal.opentopography.org/datasetMetadata?otCollectionID=OT.042023.2193.2), [LINZ national LiDAR specification](https://www.linz.govt.nz/sites/default/files/pgf_version_new_zealand_national_aerial_lidar_base_specification.pdf).
 
@@ -69,7 +69,7 @@ See `.env.example`. Only `LINZ_API_KEY` is secret and it remains backend-only. I
 
 ## Current limitations
 
-- The authenticated LINZ schema probe and complete live orchestration remain to be implemented; the endpoint fails honestly meanwhile.
+- The live endpoint currently returns the selected building and verified LiDAR object names, but not roof faces yet.
 - Waikato 2021 only; acquisition dates may differ from building outlines.
 - Classification errors and complicated roofs, chimneys, skylights and furniture can impair segmentation.
 - Current RANSAC segmentation still needs spatial-connectivity enforcement and clipped concave face boundaries.
@@ -78,4 +78,3 @@ See `.env.example`. Only `LINZ_API_KEY` is secret and it remains backend-only. I
 ## Roadmap
 
 V1 completes WFS discovery, multi-tile PDAL extraction, connected roof boundaries and real-house validation. V2 adds setbacks, exclusions, panel packing and kWp. V3 adds terrain/vegetation/building shading and irradiance. V4 adds automatic nationwide dataset discovery, background work, persistent analysis cache and 3D/reporting.
-
