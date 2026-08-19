@@ -1,0 +1,14 @@
+.env
+.venv/
+__pycache__/
+.pytest_cache/
+node_modules/
+data/lidar-cache/
+data/**/*.laz
+data/**/*.las
+data/**/*.copc.laz
+data/tmp/
+*.pyc
+*.egg-info/
+work/
+outputs/
