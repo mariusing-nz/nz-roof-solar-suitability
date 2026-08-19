@@ -57,6 +57,8 @@ python3 -m http.server 8080 --directory frontend
 # open http://localhost:8080
 ```
 
+The browser loads LINZ aerial imagery through `/api/basemap/{z}/{x}/{y}.png`; the backend adds the key, so it is never exposed in frontend source or browser tile URLs.
+
 Tests do not use live services:
 
 ```bash

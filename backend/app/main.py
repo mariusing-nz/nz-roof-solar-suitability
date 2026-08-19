@@ -1,6 +1,8 @@
 import logging
 import time
+import httpx
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import Response
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.models import RoofAnalysisRequest
@@ -18,6 +20,24 @@ app.add_middleware(CORSMiddleware, allow_origins=["http://localhost:8000", "http
 
 @app.get("/api/health")
 def health(): return {"status":"ok", "linz_configured": bool(settings.linz_api_key)}
+
+@app.get("/api/basemap/{z}/{x}/{y}.png")
+async def aerial_basemap(z: int, x: int, y: int):
+    """Backend proxy keeps the LINZ key out of browser JavaScript and network URLs."""
+    if not settings.linz_api_key:
+        raise HTTPException(503, "LINZ_API_KEY is not configured.")
+    if not 0 <= z <= 22 or x < 0 or y < 0:
+        raise HTTPException(400, "Invalid map tile coordinates.")
+    url = f"https://basemaps.linz.govt.nz/v1/tiles/aerial/3857/{z}/{x}/{y}.png"
+    try:
+        async with httpx.AsyncClient(timeout=30) as client:
+            upstream = await client.get(url, params={"api": settings.linz_api_key})
+        if upstream.status_code == 404:
+            raise HTTPException(404, "Aerial tile unavailable.")
+        upstream.raise_for_status()
+    except httpx.HTTPError as exc:
+        raise HTTPException(502, "LINZ aerial basemap request failed.") from exc
+    return Response(upstream.content, media_type="image/png", headers={"Cache-Control":"public, max-age=86400"})
 
 @app.post("/api/roof-analysis")
 async def roof_analysis(request: RoofAnalysisRequest):
